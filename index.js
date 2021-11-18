@@ -3,6 +3,7 @@ const app = express()
 const cors = require('cors');
 require('dotenv').config();
 const { MongoClient } = require('mongodb');
+const ObjectId = require("mongodb").ObjectId;
 const port = process.env.PORT || 5000
 
 app.use(cors());
@@ -15,16 +16,41 @@ async function run() {
     try {
         await client.connect();
         const database = client.db('lunettes_sunglass')
+        const productsCollection = database.collection('products')
         const ordersCollection = database.collection('orders')
+        const reviewsCollection = database.collection('reviews')
         const usersCollection = database.collection('users')
 
 
-        app.get('/orders', async (req, res) => {
-            const email = req.query.email;
-            const query = { email: email }
-            const cursor = ordersCollection.find(query)
-            const orders = await cursor.toArray()
-            res.json(orders);
+        app.post('/addProducts', async (req, res) => {
+            const result = await productsCollection.insertOne(req.body)
+            res.send(result)
+        })
+
+        app.get('/allProducts', async (req, res) => {
+            const result = await productsCollection.find({}).toArray();
+            res.send(result)
+        })
+
+        app.get('/singleProducts/:id', async (req, res) => {
+            const result = await productsCollection.find({ _id: ObjectId(req.params.id) }).toArray();
+            res.send(result[0])
+        })
+
+        // Reviews
+        app.post('/reviews', async (req, res) => {
+            const result = await reviewsCollection.insertOne(req.body)
+            res.send(result)
+        })
+
+        app.get('/allReviews', async (req, res) => {
+            const result = await reviewsCollection.find({}).toArray();
+            res.send(result)
+        })
+
+        app.get('/orders/:email', async (req, res) => {
+            const result = await ordersCollection.find({ email: req.params.email }).toArray();
+            res.json(result)
         })
 
         app.post('/orders', async (req, res) => {
@@ -47,7 +73,6 @@ async function run() {
         app.post('/users', async (req, res) => {
             const user = req.body;
             const result = await usersCollection.insertOne(user);
-            console.log(result)
             res.json(result)
         })
 
